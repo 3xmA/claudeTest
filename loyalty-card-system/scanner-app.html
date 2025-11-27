@@ -350,11 +350,18 @@
 
         // Inizializzazione
         window.onload = function() {
+            console.log('🚀 Scanner App caricata');
+            console.log('⚙️ Config API URL:', config.apiUrl);
+            console.log('⚙️ Config API Key:', config.apiKey ? '***configurata***' : 'NON CONFIGURATA');
+
             if (config.apiUrl && config.apiKey) {
+                console.log('✅ Configurazione trovata, mostro scanner');
                 document.getElementById('configSection').classList.add('hidden');
                 document.getElementById('scannerSection').classList.remove('hidden');
                 document.getElementById('apiUrl').value = config.apiUrl;
                 document.getElementById('apiKey').value = config.apiKey;
+            } else {
+                console.log('⚠️ Configurazione mancante, mostro form config');
             }
         };
 
@@ -422,18 +429,20 @@
 
         // Successo scansione
         function onScanSuccess(decodedText, decodedResult) {
-            console.log('QR Scansionato:', decodedText);
+            console.log('🔍 QR Scansionato:', decodedText);
 
             // Verifica formato QR: LOYALTY-USER-123-hash
             const match = decodedText.match(/^LOYALTY-USER-(\d+)-([a-f0-9]{8})$/);
-            
+
             if (!match) {
-                showError('QR code non valido');
+                console.error('❌ QR code formato non valido:', decodedText);
+                showError('QR code non valido. Formato ricevuto: ' + decodedText.substring(0, 50));
                 return;
             }
 
             const userId = match[1];
-            
+            console.log('✅ User ID estratto:', userId);
+
             // Ferma scanner
             stopScanner();
 
@@ -447,12 +456,25 @@
 
         // Carica dati utente
         async function loadUserData(userId) {
-            try {
-                const response = await fetch(`${config.apiUrl}/wp-json/loyalty/v1/balance/${userId}`);
+            console.log('📡 Caricamento dati utente ID:', userId);
+            console.log('📡 URL API:', config.apiUrl);
 
-                if (!response.ok) throw new Error('Utente non trovato');
+            const url = `${config.apiUrl}/wp-json/loyalty/v1/balance/${userId}`;
+            console.log('📡 URL completo:', url);
+
+            try {
+                const response = await fetch(url);
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response ok:', response.ok);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Errore response:', errorText);
+                    throw new Error(`Errore ${response.status}: ${errorText.substring(0, 100)}`);
+                }
 
                 const data = await response.json();
+                console.log('✅ Dati ricevuti:', data);
 
                 // L'endpoint balance già restituisce nome ed email
                 currentUser = {
@@ -462,22 +484,30 @@
                     balance: data.balance
                 };
 
+                console.log('✅ Current user impostato:', currentUser);
+
                 // Mostra form
+                console.log('👁️ Nascondo scanner, mostro form...');
                 document.getElementById('scannerSection').classList.add('hidden');
                 document.getElementById('formSection').classList.remove('hidden');
                 document.getElementById('customerName').textContent = currentUser.name;
                 document.getElementById('customerEmail').textContent = currentUser.email;
                 document.getElementById('currentBalance').textContent = currentUser.balance;
 
+                console.log('✅ Form mostrato con successo!');
+
                 // Focus su campo importo
                 document.getElementById('amount').focus();
 
             } catch (error) {
-                console.error('Errore:', error);
-                showError('Errore nel caricare i dati del cliente');
+                console.error('❌ Errore loadUserData:', error);
+                showError('Errore: ' + error.message);
+
+                // Riavvia scanner dopo 3 secondi
                 setTimeout(() => {
+                    hideError();
                     startScanner();
-                }, 2000);
+                }, 3000);
             }
         }
 
@@ -565,14 +595,24 @@
 
         // Mostra errore
         function showError(message) {
+            console.error('⚠️ Mostro errore:', message);
             const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = '❌ ' + message;
-            errorDiv.classList.remove('hidden');
+            if (errorDiv) {
+                errorDiv.textContent = '❌ ' + message;
+                errorDiv.classList.remove('hidden');
+                console.log('✅ Errore mostrato nel div');
+            } else {
+                console.error('❌ errorMessage div non trovato!');
+                alert('❌ ' + message);
+            }
         }
 
         // Nascondi errore
         function hideError() {
-            document.getElementById('errorMessage').classList.add('hidden');
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.classList.add('hidden');
+            }
         }
     </script>
 </body>
