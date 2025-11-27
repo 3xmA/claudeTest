@@ -329,6 +329,13 @@ class LoyaltyCardSystem {
             'callback' => array($this, 'api_validate_reward'),
             'permission_callback' => array($this, 'check_api_permission'),
         ));
+
+        // Endpoint DEBUG: verifica dati utente (telefono, email, ecc.)
+        register_rest_route('loyalty/v1', '/debug-user/(?P<user_id>\d+)', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'api_debug_user'),
+            'permission_callback' => array($this, 'check_api_permission'),
+        ));
     }
     
     /**
@@ -502,29 +509,95 @@ class LoyaltyCardSystem {
      */
     public function api_validate_reward($request) {
         global $wpdb;
-        
+
         $redemption_code = $request->get_param('redemption_code');
-        
+
         $table = $wpdb->prefix . 'loyalty_redemptions';
         $redemption = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $table WHERE redemption_code = %s AND status = 'active'",
             $redemption_code
         ));
-        
+
         if (!$redemption) {
             return new WP_Error('invalid_code', 'Codice non valido o già utilizzato', array('status' => 404));
         }
-        
+
         // Marca come utilizzato
-        $wpdb->update($table, 
+        $wpdb->update($table,
             array('status' => 'used', 'used_at' => current_time('mysql')),
             array('id' => $redemption->id)
         );
-        
+
         return array(
             'success' => true,
             'message' => 'Premio validato con successo',
             'redemption' => $redemption,
+        );
+    }
+
+    /**
+     * API DEBUG: Mostra tutti i dati utente per debug notifiche
+     */
+    public function api_debug_user($request) {
+        $user_id = $request->get_param('user_id');
+
+        $user = get_user_by('id', $user_id);
+        if (!$user) {
+            return new WP_Error('invalid_user', 'Utente non trovato', array('status' => 404));
+        }
+
+        // Recupera telefono da vari campi
+        $phone = $this->get_user_phone($user_id);
+
+        // Dettaglio recupero telefono
+        $phone_sources = array();
+
+        // ACF
+        if (function_exists('get_field')) {
+            $acf_phone = get_field('field_6928079e6b6ec', 'user_' . $user_id);
+            $phone_sources['acf_field_6928079e6b6ec'] = $acf_phone ? $acf_phone : 'vuoto';
+        } else {
+            $phone_sources['acf_field_6928079e6b6ec'] = 'ACF non disponibile';
+        }
+
+        // WooCommerce
+        $billing_phone = get_user_meta($user_id, 'billing_phone', true);
+        $phone_sources['billing_phone'] = $billing_phone ? $billing_phone : 'vuoto';
+
+        // Generico
+        $generic_phone = get_user_meta($user_id, 'phone', true);
+        $phone_sources['phone'] = $generic_phone ? $generic_phone : 'vuoto';
+
+        // Configurazione notifiche
+        $notifications_status = array(
+            'email_points_added' => array(
+                'enabled' => get_option('loyalty_email_points_added_enabled', false),
+                'subject' => get_option('loyalty_email_points_added_subject', 'non configurato'),
+                'has_body' => !empty(get_option('loyalty_email_points_added_body', '')),
+            ),
+            'whatsapp_points_added' => array(
+                'enabled' => get_option('loyalty_whatsapp_points_added_enabled', false),
+                'has_message' => !empty(get_option('loyalty_whatsapp_points_added_text', '')),
+            ),
+            'evolution_api' => array(
+                'url' => get_option('loyalty_evolution_url', 'non configurato'),
+                'instance' => get_option('loyalty_evolution_instance', 'non configurato'),
+                'apikey' => get_option('loyalty_evolution_apikey', '') ? '***configurata***' : 'non configurata',
+            ),
+        );
+
+        return array(
+            'success' => true,
+            'user' => array(
+                'id' => $user_id,
+                'name' => $user->display_name,
+                'email' => $user->user_email,
+                'phone_normalized' => $phone ? $phone : 'TELEFONO NON TROVATO',
+            ),
+            'phone_sources' => $phone_sources,
+            'notifications_config' => $notifications_status,
+            'balance' => $this->get_user_balance($user_id),
+            'help' => 'Questo endpoint mostra tutti i dati utili per debuggare le notifiche. Il telefono normalizzato è quello che verrà usato per WhatsApp.',
         );
     }
     
