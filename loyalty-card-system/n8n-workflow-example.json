@@ -1,0 +1,324 @@
+{
+  "name": "Loyalty Card - Automazioni",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "loyalty-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "loyalty-card-system"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"event\"]}}",
+              "operation": "equal",
+              "value2": "points_added"
+            }
+          ]
+        }
+      },
+      "name": "Se Punti Aggiunti",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"event\"]}}",
+              "operation": "equal",
+              "value2": "reward_redeemed"
+            }
+          ]
+        }
+      },
+      "name": "Se Premio Riscattato",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 500]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "chatId": "={{$json[\"data\"][\"user_email\"]}}",
+        "text": "🎉 Hai guadagnato {{$json[\"data\"][\"points\"]}} punti!\n\n💰 Importo spesa: €{{$json[\"data\"][\"amount\"]}}\n⭐ Nuovo saldo: {{$json[\"data\"][\"new_balance\"]}} punti\n\nGrazie per il tuo acquisto! 😊",
+        "additionalFields": {}
+      },
+      "name": "Invia Email Punti",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [650, 200],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "chatId": "={{$json[\"data\"][\"user_email\"]}}",
+        "text": "🎁 Premio Riscattato con Successo!\n\n🏆 Premio: {{$json[\"data\"][\"reward_name\"]}}\n🎫 Codice: {{$json[\"data\"][\"redemption_code\"]}}\n\nMostra questo codice al negoziante per ritirare il tuo premio! ✨\n\n💰 Punti utilizzati: {{$json[\"data\"][\"points_used\"]}}\n⭐ Saldo rimanente: {{$json[\"data\"][\"new_balance\"]}} punti",
+        "additionalFields": {}
+      },
+      "name": "Invia Email Premio",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [650, 400],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"data\"][\"new_balance\"]}}",
+              "operation": "largerEqual",
+              "value2": 100
+            }
+          ]
+        }
+      },
+      "name": "Ha Abbastanza Punti per Premio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "chatId": "={{$json[\"data\"][\"user_email\"]}}",
+        "text": "🔥 Fantastico! Hai raggiunto {{$json[\"data\"][\"new_balance\"]}} punti!\n\n🎁 Puoi già riscattare alcuni premi!\n\nVai sulla tua carta fedeltà per vedere i premi disponibili: [LINK]\n\nNon lasciarti scappare questa occasione! 😍",
+        "additionalFields": {}
+      },
+      "name": "Notifica Premio Disponibile",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1050, 150],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Transazioni",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Data": "={{$json[\"timestamp\"]}}",
+            "User ID": "={{$json[\"data\"][\"user_id\"]}}",
+            "Nome": "={{$json[\"data\"][\"user_name\"]}}",
+            "Email": "={{$json[\"data\"][\"user_email\"]}}",
+            "Punti": "={{$json[\"data\"][\"points\"]}}",
+            "Importo": "={{$json[\"data\"][\"amount\"]}}",
+            "Saldo": "={{$json[\"data\"][\"new_balance\"]}}",
+            "Nota": "={{$json[\"data\"][\"note\"]}}"
+          }
+        },
+        "options": {}
+      },
+      "name": "Log su Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [850, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "2",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "💳 Nuova Transazione!\n\n👤 Cliente: {{$json[\"data\"][\"user_name\"]}}\n💰 Importo: €{{$json[\"data\"][\"amount\"]}}\n⭐ Punti: +{{$json[\"data\"][\"points\"]}}\n📊 Saldo: {{$json[\"data\"][\"new_balance\"]}}",
+        "additionalFields": {}
+      },
+      "name": "Notifica Telegram Admin",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [850, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true, \"message\": \"Webhook ricevuto con successo\"}",
+        "options": {}
+      },
+      "name": "Rispondi Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Se Punti Aggiunti",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Se Premio Riscattato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Se Punti Aggiunti": {
+      "main": [
+        [
+          {
+            "node": "Invia Email Punti",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log su Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notifica Telegram Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Se Premio Riscattato": {
+      "main": [
+        [
+          {
+            "node": "Invia Email Premio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invia Email Punti": {
+      "main": [
+        [
+          {
+            "node": "Ha Abbastanza Punti per Premio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ha Abbastanza Punti per Premio?": {
+      "main": [
+        [
+          {
+            "node": "Notifica Premio Disponibile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rispondi Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invia Email Premio": {
+      "main": [
+        [
+          {
+            "node": "Rispondi Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notifica Premio Disponibile": {
+      "main": [
+        [
+          {
+            "node": "Rispondi Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log su Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Rispondi Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notifica Telegram Admin": {
+      "main": [
+        [
+          {
+            "node": "Rispondi Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-15T10:00:00.000Z",
+  "versionId": "1"
+}

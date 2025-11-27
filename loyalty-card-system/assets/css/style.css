@@ -1,0 +1,473 @@
+/* Loyalty Card System Styles */
+
+:root {
+    --loyalty-primary: #4f46e5;
+    --loyalty-secondary: #7c3aed;
+    --loyalty-success: #10b981;
+    --loyalty-warning: #f59e0b;
+    --loyalty-danger: #ef4444;
+    --loyalty-bg: #f9fafb;
+    --loyalty-card-bg: #ffffff;
+    --loyalty-border: #e5e7eb;
+    --loyalty-text: #1f2937;
+    --loyalty-text-light: #6b7280;
+}
+
+.loyalty-card-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Carta Principale */
+.loyalty-card {
+    background: linear-gradient(135deg, var(--loyalty-primary) 0%, var(--loyalty-secondary) 100%);
+    border-radius: 20px;
+    padding: 30px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(79, 70, 229, 0.3);
+    margin-bottom: 30px;
+}
+
+.loyalty-card-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.loyalty-card-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.user-name {
+    font-size: 18px;
+    opacity: 0.9;
+}
+
+.loyalty-card-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .loyalty-card-body {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Sezione Punti */
+.points-section {
+    text-align: center;
+}
+
+.points-balance {
+    margin-bottom: 20px;
+}
+
+.points-label {
+    display: block;
+    font-size: 14px;
+    opacity: 0.8;
+    margin-bottom: 5px;
+}
+
+.points-value {
+    display: block;
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.points-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.stat-item {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 15px 10px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.stat-label {
+    display: block;
+    font-size: 11px;
+    opacity: 0.8;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* Sezione QR Code */
+.qr-section {
+    text-align: center;
+}
+
+.qr-instructions {
+    font-size: 14px;
+    margin-bottom: 15px;
+    opacity: 0.9;
+}
+
+.qr-code-wrapper {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    display: inline-block;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.qr-code-image {
+    display: block;
+    max-width: 250px;
+    height: auto;
+}
+
+.user-id-text {
+    margin-top: 10px;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* Sezione Premi */
+.rewards-section {
+    margin-bottom: 40px;
+}
+
+.rewards-section h3 {
+    font-size: 24px;
+    color: var(--loyalty-text);
+    margin-bottom: 20px;
+}
+
+.rewards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.reward-card {
+    background: var(--loyalty-card-bg);
+    border: 2px solid var(--loyalty-border);
+    border-radius: 15px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.reward-card.can-redeem {
+    border-color: var(--loyalty-success);
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.1);
+}
+
+.reward-card.can-redeem:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+}
+
+.reward-card.locked {
+    opacity: 0.7;
+}
+
+.reward-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.reward-header h4 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--loyalty-text);
+}
+
+.reward-points {
+    background: var(--loyalty-primary);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.reward-body p {
+    color: var(--loyalty-text-light);
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+/* Progress Bar */
+.reward-progress {
+    margin-bottom: 15px;
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--loyalty-border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--loyalty-primary), var(--loyalty-secondary));
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    display: block;
+    font-size: 13px;
+    color: var(--loyalty-text-light);
+    font-weight: 500;
+}
+
+.btn-redeem {
+    width: 100%;
+    padding: 12px;
+    background: var(--loyalty-success);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-redeem:hover {
+    background: #059669;
+    transform: scale(1.02);
+}
+
+/* Transazioni */
+.transactions-section,
+.redemptions-section {
+    margin-bottom: 40px;
+}
+
+.transactions-section h3,
+.redemptions-section h3 {
+    font-size: 24px;
+    color: var(--loyalty-text);
+    margin-bottom: 20px;
+}
+
+.transactions-list {
+    background: var(--loyalty-card-bg);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.transaction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--loyalty-border);
+    transition: background 0.2s ease;
+}
+
+.transaction-item:last-child {
+    border-bottom: none;
+}
+
+.transaction-item:hover {
+    background: var(--loyalty-bg);
+}
+
+.transaction-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.transaction-date {
+    font-size: 12px;
+    color: var(--loyalty-text-light);
+}
+
+.transaction-note {
+    font-size: 15px;
+    color: var(--loyalty-text);
+    font-weight: 500;
+}
+
+.transaction-amount {
+    font-size: 13px;
+    color: var(--loyalty-text-light);
+}
+
+.transaction-points {
+    font-size: 18px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 8px;
+}
+
+.transaction-points.positive {
+    color: var(--loyalty-success);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.transaction-points.negative {
+    color: var(--loyalty-danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Premi Riscattati */
+.redemptions-list {
+    display: grid;
+    gap: 20px;
+}
+
+.redemption-item {
+    background: var(--loyalty-card-bg);
+    border: 2px solid var(--loyalty-border);
+    border-radius: 15px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: center;
+}
+
+.redemption-item.status-active {
+    border-color: var(--loyalty-success);
+    background: rgba(16, 185, 129, 0.02);
+}
+
+.redemption-info h4 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    color: var(--loyalty-text);
+}
+
+.redemption-info p {
+    margin: 0 0 10px 0;
+    color: var(--loyalty-text-light);
+    font-size: 14px;
+}
+
+.redemption-date {
+    font-size: 12px;
+    color: var(--loyalty-text-light);
+}
+
+.redemption-qr {
+    text-align: center;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.qr-instructions-small {
+    font-size: 11px;
+    margin-bottom: 10px;
+    color: var(--loyalty-text-light);
+}
+
+.qr-code-small {
+    max-width: 150px;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.redemption-code {
+    font-size: 12px;
+    color: var(--loyalty-text);
+    margin: 0;
+}
+
+.redemption-used {
+    text-align: center;
+}
+
+.used-badge {
+    display: block;
+    font-size: 16px;
+    color: var(--loyalty-text-light);
+    margin-bottom: 5px;
+}
+
+.used-date {
+    display: block;
+    font-size: 12px;
+    color: var(--loyalty-text-light);
+}
+
+/* Modal */
+.loyalty-modal {
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.modal-close {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--loyalty-text-light);
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--loyalty-text);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .loyalty-card {
+        padding: 20px;
+    }
+    
+    .points-value {
+        font-size: 48px;
+    }
+    
+    .rewards-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .redemption-item {
+        grid-template-columns: 1fr;
+    }
+    
+    .redemption-qr {
+        justify-self: center;
+    }
+}

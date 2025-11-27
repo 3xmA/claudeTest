@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Carta Fedeltà - Negoziante</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .scanner-card,
+        .form-card,
+        .result-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .scanner-card h2,
+        .form-card h2 {
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        #qr-reader {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .scanner-status {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .scanner-status.active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .scanner-status.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .customer-info {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .customer-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .customer-info strong {
+            color: #1f2937;
+        }
+
+        .points-preview {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .points-preview .label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .points-preview .value {
+            font-size: 48px;
+            font-weight: 700;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .result-card {
+            text-align: center;
+        }
+
+        .result-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+
+        .result-card h3 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .result-details {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .result-details p {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .config-section {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .config-section h3 {
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎫 Scanner Carta Fedeltà</h1>
+            <p>Scansiona il QR del cliente per aggiungere punti</p>
+        </div>
+
+        <!-- Configurazione (mostra solo se non configurato) -->
+        <div id="configSection" class="config-section">
+            <h3>⚙️ Configurazione</h3>
+            <div class="form-group">
+                <label for="apiUrl">URL WordPress</label>
+                <input type="url" id="apiUrl" placeholder="https://tuosito.com" value="">
+            </div>
+            <div class="form-group">
+                <label for="apiKey">API Key</label>
+                <input type="text" id="apiKey" placeholder="La tua API key" value="">
+            </div>
+            <button class="btn btn-primary" onclick="saveConfig()">Salva Configurazione</button>
+        </div>
+
+        <!-- Scanner QR -->
+        <div id="scannerSection" class="scanner-card hidden">
+            <h2>📷 Scanner QR</h2>
+            <div id="qr-reader"></div>
+            <div id="scannerStatus" class="scanner-status inactive">
+                Scanner non attivo
+            </div>
+            <button class="btn btn-secondary" onclick="toggleScanner()">
+                <span id="scannerBtnText">Avvia Scanner</span>
+            </button>
+        </div>
+
+        <!-- Form Transazione -->
+        <div id="formSection" class="form-card hidden">
+            <h2>💳 Aggiungi Punti</h2>
+            
+            <div id="errorMessage" class="error-message hidden"></div>
+
+            <div class="customer-info">
+                <p><strong>Cliente:</strong> <span id="customerName">-</span></p>
+                <p><strong>Email:</strong> <span id="customerEmail">-</span></p>
+                <p><strong>Saldo Attuale:</strong> <span id="currentBalance">-</span> punti</p>
+            </div>
+
+            <div class="form-group">
+                <label for="amount">Importo Spesa (€)</label>
+                <input type="number" id="amount" placeholder="50.00" step="0.01" min="0" oninput="calculatePoints()">
+            </div>
+
+            <div class="points-preview">
+                <div class="label">Punti da Aggiungere</div>
+                <div class="value" id="pointsPreview">0</div>
+            </div>
+
+            <div class="form-group">
+                <label for="note">Nota (opzionale)</label>
+                <textarea id="note" placeholder="es: Acquisto prodotti vari"></textarea>
+            </div>
+
+            <button class="btn btn-primary" onclick="addPoints()" id="submitBtn">
+                Aggiungi Punti
+            </button>
+
+            <button class="btn btn-secondary" onclick="resetForm()">
+                Scansiona Nuovo Cliente
+            </button>
+        </div>
+
+        <!-- Risultato -->
+        <div id="resultSection" class="result-card hidden">
+            <div class="result-icon">✅</div>
+            <h3>Punti Aggiunti con Successo!</h3>
+            
+            <div class="result-details">
+                <p><strong>Cliente:</strong> <span id="resultCustomer"></span></p>
+                <p><strong>Punti Aggiunti:</strong> +<span id="resultPoints"></span></p>
+                <p><strong>Nuovo Saldo:</strong> <span id="resultBalance"></span> punti</p>
+            </div>
+
+            <button class="btn btn-primary" onclick="resetForNewScan()">
+                Scansiona Nuovo Cliente
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Configurazione
+        let config = {
+            apiUrl: localStorage.getItem('loyalty_api_url') || '',
+            apiKey: localStorage.getItem('loyalty_api_key') || '',
+            pointsPerEuro: 1 // default
+        };
+
+        let currentUser = null;
+        let html5QrCode = null;
+        let scannerActive = false;
+
+        // Inizializzazione
+        window.onload = function() {
+            if (config.apiUrl && config.apiKey) {
+                document.getElementById('configSection').classList.add('hidden');
+                document.getElementById('scannerSection').classList.remove('hidden');
+                document.getElementById('apiUrl').value = config.apiUrl;
+                document.getElementById('apiKey').value = config.apiKey;
+            }
+        };
+
+        // Salva configurazione
+        function saveConfig() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+
+            if (!apiUrl || !apiKey) {
+                alert('Inserisci URL e API Key');
+                return;
+            }
+
+            config.apiUrl = apiUrl.replace(/\/$/, ''); // rimuovi trailing slash
+            config.apiKey = apiKey;
+
+            localStorage.setItem('loyalty_api_url', config.apiUrl);
+            localStorage.setItem('loyalty_api_key', config.apiKey);
+
+            document.getElementById('configSection').classList.add('hidden');
+            document.getElementById('scannerSection').classList.remove('hidden');
+
+            alert('✅ Configurazione salvata!');
+        }
+
+        // Toggle scanner
+        function toggleScanner() {
+            if (scannerActive) {
+                stopScanner();
+            } else {
+                startScanner();
+            }
+        }
+
+        // Avvia scanner
+        function startScanner() {
+            html5QrCode = new Html5Qrcode("qr-reader");
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                onScanSuccess,
+                onScanError
+            ).then(() => {
+                scannerActive = true;
+                document.getElementById('scannerStatus').textContent = '✅ Scanner attivo - Inquadra il QR code';
+                document.getElementById('scannerStatus').className = 'scanner-status active';
+                document.getElementById('scannerBtnText').textContent = 'Ferma Scanner';
+            }).catch(err => {
+                alert('Errore nell\'avviare la fotocamera: ' + err);
+            });
+        }
+
+        // Ferma scanner
+        function stopScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    scannerActive = false;
+                    document.getElementById('scannerStatus').textContent = 'Scanner non attivo';
+                    document.getElementById('scannerStatus').className = 'scanner-status inactive';
+                    document.getElementById('scannerBtnText').textContent = 'Avvia Scanner';
+                });
+            }
+        }
+
+        // Successo scansione
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log('QR Scansionato:', decodedText);
+
+            // Verifica formato QR: LOYALTY-USER-123-hash
+            const match = decodedText.match(/^LOYALTY-USER-(\d+)-([a-f0-9]{8})$/);
+            
+            if (!match) {
+                showError('QR code non valido');
+                return;
+            }
+
+            const userId = match[1];
+            
+            // Ferma scanner
+            stopScanner();
+
+            // Carica dati utente
+            loadUserData(userId);
+        }
+
+        function onScanError(error) {
+            // Ignora errori di scansione continui
+        }
+
+        // Carica dati utente
+        async function loadUserData(userId) {
+            try {
+                const response = await fetch(`${config.apiUrl}/wp-json/loyalty/v1/balance/${userId}`);
+                
+                if (!response.ok) throw new Error('Utente non trovato');
+
+                const data = await response.json();
+
+                // Carica anche info utente da WordPress
+                const userResponse = await fetch(`${config.apiUrl}/wp-json/wp/v2/users/${userId}`);
+                const userData = await userResponse.json();
+
+                currentUser = {
+                    id: userId,
+                    name: userData.name,
+                    email: userData.email || 'N/A',
+                    balance: data.balance
+                };
+
+                // Mostra form
+                document.getElementById('scannerSection').classList.add('hidden');
+                document.getElementById('formSection').classList.remove('hidden');
+                document.getElementById('customerName').textContent = currentUser.name;
+                document.getElementById('customerEmail').textContent = currentUser.email;
+                document.getElementById('currentBalance').textContent = currentUser.balance;
+
+                // Focus su campo importo
+                document.getElementById('amount').focus();
+
+            } catch (error) {
+                console.error('Errore:', error);
+                showError('Errore nel caricare i dati del cliente');
+                setTimeout(() => {
+                    startScanner();
+                }, 2000);
+            }
+        }
+
+        // Calcola punti in tempo reale
+        function calculatePoints() {
+            const amount = parseFloat(document.getElementById('amount').value) || 0;
+            const points = Math.floor(amount * config.pointsPerEuro);
+            document.getElementById('pointsPreview').textContent = points;
+        }
+
+        // Aggiungi punti
+        async function addPoints() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const note = document.getElementById('note').value;
+
+            if (!amount || amount <= 0) {
+                showError('Inserisci un importo valido');
+                return;
+            }
+
+            const points = Math.floor(amount * config.pointsPerEuro);
+
+            // Disabilita bottone
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Invio in corso...';
+
+            try {
+                const response = await fetch(`${config.apiUrl}/wp-json/loyalty/v1/add-points`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': config.apiKey
+                    },
+                    body: JSON.stringify({
+                        user_id: currentUser.id,
+                        points: points,
+                        amount: amount,
+                        note: note || 'Acquisto in negozio'
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Errore nell\'aggiungere punti');
+                }
+
+                const data = await response.json();
+
+                // Mostra risultato
+                document.getElementById('formSection').classList.add('hidden');
+                document.getElementById('resultSection').classList.remove('hidden');
+                document.getElementById('resultCustomer').textContent = currentUser.name;
+                document.getElementById('resultPoints').textContent = points;
+                document.getElementById('resultBalance').textContent = data.new_balance;
+
+            } catch (error) {
+                console.error('Errore:', error);
+                showError(error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Aggiungi Punti';
+            }
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('amount').value = '';
+            document.getElementById('note').value = '';
+            document.getElementById('pointsPreview').textContent = '0';
+            document.getElementById('formSection').classList.add('hidden');
+            document.getElementById('scannerSection').classList.remove('hidden');
+            hideError();
+            startScanner();
+        }
+
+        // Reset per nuova scansione
+        function resetForNewScan() {
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('scannerSection').classList.remove('hidden');
+            currentUser = null;
+            resetForm();
+            startScanner();
+        }
+
+        // Mostra errore
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        // Nascondi errore
+        function hideError() {
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
