@@ -534,13 +534,48 @@ class LoyaltyCardSystem {
     private function get_user_balance($user_id) {
         global $wpdb;
         $table = $wpdb->prefix . 'loyalty_transactions';
-        
+
         $balance = $wpdb->get_var($wpdb->prepare(
             "SELECT SUM(points) FROM $table WHERE user_id = %d",
             $user_id
         ));
-        
+
         return $balance ? intval($balance) : 0;
+    }
+
+    /**
+     * Ottieni numero di telefono utente da vari campi
+     */
+    private function get_user_phone($user_id) {
+        $phone = '';
+
+        // 1. Prova campo ACF field_6928079e6b6ec
+        if (function_exists('get_field')) {
+            $acf_phone = get_field('field_6928079e6b6ec', 'user_' . $user_id);
+            if (!empty($acf_phone)) {
+                $phone = $acf_phone;
+            }
+        }
+
+        // 2. Prova campo WooCommerce billing_phone
+        if (empty($phone)) {
+            $billing_phone = get_user_meta($user_id, 'billing_phone', true);
+            if (!empty($billing_phone)) {
+                $phone = $billing_phone;
+            }
+        }
+
+        // 3. Prova campo generico phone
+        if (empty($phone)) {
+            $phone = get_user_meta($user_id, 'phone', true);
+        }
+
+        // Normalizza formato: rimuovi +, spazi, trattini, parentesi
+        if (!empty($phone)) {
+            $phone = str_replace(['+', ' ', '-', '(', ')'], '', $phone);
+        }
+
+        return $phone;
     }
     
     /**
@@ -553,9 +588,9 @@ class LoyaltyCardSystem {
         try {
             // Aggiungi telefono se presente
             if (isset($data['user_id'])) {
-                $phone = get_user_meta($data['user_id'], 'phone', true);
+                $phone = $this->get_user_phone($data['user_id']);
                 if (!empty($phone)) {
-                    $data['user_phone'] = str_replace('+', '', $phone);
+                    $data['user_phone'] = $phone;
                 }
             }
             
@@ -599,36 +634,58 @@ class LoyaltyCardSystem {
         try {
             // Email
             $email_enabled = get_option('loyalty_email_' . $event . '_enabled', false);
-            if ($email_enabled && !empty($data['user_email'])) {
-                $subject = get_option('loyalty_email_' . $event . '_subject', '');
-                $body = get_option('loyalty_email_' . $event . '_body', '');
-                
-                if (!empty($subject) && !empty($body)) {
-                    $subject = Loyalty_Email_Sender::replace_variables($subject, $data);
-                    $body = Loyalty_Email_Sender::replace_variables($body, $data);
-                    
-                    Loyalty_Email_Sender::send($data['user_email'], $subject, $body, $event);
-                }
-            }
-            
-            // WhatsApp
-            $whatsapp_enabled = get_option('loyalty_whatsapp_' . $event . '_enabled', false);
-            if ($whatsapp_enabled && !empty($data['user_phone'])) {
-                $message = get_option('loyalty_whatsapp_' . $event . '_text', '');
-                
-                if (!empty($message)) {
-                    $message = Loyalty_WhatsApp_Sender::replace_variables($message, $data);
-                    
-                    Loyalty_WhatsApp_Sender::send($data['user_phone'], $message, $event);
-                    
-                    // Se è premio riscattato, invia anche QR
-                    if ($event === 'reward_redeemed' && !empty($data['redemption_code'])) {
-                        $qr_url = 'https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=LOYALTY-REWARD-' . $data['redemption_code'];
-                        $caption = 'Mostra questo QR al negoziante! 🎫\n\nCodice: ' . $data['redemption_code'];
-                        
-                        Loyalty_WhatsApp_Sender::send_media($data['user_phone'], $qr_url, $caption, $event);
+            if ($email_enabled) {
+                if (empty($data['user_email'])) {
+                    error_log("Loyalty: Email non inviata per evento '{$event}' - email utente mancante");
+                } else {
+                    $subject = get_option('loyalty_email_' . $event . '_subject', '');
+                    $body = get_option('loyalty_email_' . $event . '_body', '');
+
+                    if (empty($subject) || empty($body)) {
+                        error_log("Loyalty: Email non inviata per evento '{$event}' - template mancante");
+                    } else {
+                        $subject = Loyalty_Email_Sender::replace_variables($subject, $data);
+                        $body = Loyalty_Email_Sender::replace_variables($body, $data);
+
+                        $sent = Loyalty_Email_Sender::send($data['user_email'], $subject, $body, $event);
+                        if ($sent) {
+                            error_log("Loyalty: Email inviata con successo a {$data['user_email']} per evento '{$event}'");
+                        }
                     }
                 }
+            } else {
+                error_log("Loyalty: Email disabilitata per evento '{$event}'");
+            }
+
+            // WhatsApp
+            $whatsapp_enabled = get_option('loyalty_whatsapp_' . $event . '_enabled', false);
+            if ($whatsapp_enabled) {
+                if (empty($data['user_phone'])) {
+                    error_log("Loyalty: WhatsApp non inviato per evento '{$event}' - telefono utente mancante (user_id: {$data['user_id']})");
+                } else {
+                    $message = get_option('loyalty_whatsapp_' . $event . '_text', '');
+
+                    if (empty($message)) {
+                        error_log("Loyalty: WhatsApp non inviato per evento '{$event}' - template mancante");
+                    } else {
+                        $message = Loyalty_WhatsApp_Sender::replace_variables($message, $data);
+
+                        $sent = Loyalty_WhatsApp_Sender::send($data['user_phone'], $message, $event);
+                        if ($sent) {
+                            error_log("Loyalty: WhatsApp inviato con successo a {$data['user_phone']} per evento '{$event}'");
+                        }
+
+                        // Se è premio riscattato, invia anche QR
+                        if ($event === 'reward_redeemed' && !empty($data['redemption_code'])) {
+                            $qr_url = 'https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=LOYALTY-REWARD-' . $data['redemption_code'];
+                            $caption = 'Mostra questo QR al negoziante! 🎫\n\nCodice: ' . $data['redemption_code'];
+
+                            Loyalty_WhatsApp_Sender::send_media($data['user_phone'], $qr_url, $caption, $event);
+                        }
+                    }
+                }
+            } else {
+                error_log("Loyalty: WhatsApp disabilitato per evento '{$event}'");
             }
         } catch (Exception $e) {
             // Log errore ma non bloccare

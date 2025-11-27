@@ -449,19 +449,16 @@
         async function loadUserData(userId) {
             try {
                 const response = await fetch(`${config.apiUrl}/wp-json/loyalty/v1/balance/${userId}`);
-                
+
                 if (!response.ok) throw new Error('Utente non trovato');
 
                 const data = await response.json();
 
-                // Carica anche info utente da WordPress
-                const userResponse = await fetch(`${config.apiUrl}/wp-json/wp/v2/users/${userId}`);
-                const userData = await userResponse.json();
-
+                // L'endpoint balance già restituisce nome ed email
                 currentUser = {
                     id: userId,
-                    name: userData.name,
-                    email: userData.email || 'N/A',
+                    name: data.user_name || 'Cliente',
+                    email: data.user_email || 'N/A',
                     balance: data.balance
                 };
 
