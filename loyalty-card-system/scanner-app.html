@@ -323,7 +323,7 @@
         <div id="resultSection" class="result-card hidden">
             <div class="result-icon">✅</div>
             <h3>Punti Aggiunti con Successo!</h3>
-            
+
             <div class="result-details">
                 <p><strong>Cliente:</strong> <span id="resultCustomer"></span></p>
                 <p><strong>Punti Aggiunti:</strong> +<span id="resultPoints"></span></p>
@@ -332,6 +332,37 @@
 
             <button class="btn btn-primary" onclick="resetForNewScan()">
                 Scansiona Nuovo Cliente
+            </button>
+        </div>
+
+        <!-- Risultato Validazione Premio -->
+        <div id="rewardSection" class="result-card hidden">
+            <div class="result-icon">🎁</div>
+            <h3>Premio Validato con Successo!</h3>
+
+            <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 25px; border-radius: 12px; text-align: center; margin: 20px 0;">
+                <div style="font-size: 18px; opacity: 0.95; margin-bottom: 10px;">Premio</div>
+                <div id="rewardName" style="font-size: 32px; font-weight: bold; margin: 10px 0;">-</div>
+                <div id="rewardValue" style="font-size: 48px; font-weight: 700; margin: 15px 0;">-</div>
+            </div>
+
+            <div class="result-details">
+                <p><strong>Codice:</strong> <span id="rewardCode"></span></p>
+                <p><strong>Punti Utilizzati:</strong> <span id="rewardPointsUsed"></span></p>
+                <p><strong>Data Riscatto:</strong> <span id="rewardRedeemedAt"></span></p>
+            </div>
+
+            <div style="background: #dcfce7; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 8px;">
+                <p style="margin: 0 0 10px 0; font-weight: bold; color: #166534;">✅ Azioni completate:</p>
+                <ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8; color: #166534;">
+                    <li>Premio marcato come utilizzato</li>
+                    <li>Cliente non potrà riutilizzarlo</li>
+                    <li>Premio rimosso dalla dashboard utente</li>
+                </ul>
+            </div>
+
+            <button class="btn btn-primary" onclick="resetForNewScan()">
+                Scansiona Nuovo QR
             </button>
         </div>
     </div>
@@ -648,10 +679,55 @@
         // Reset per nuova scansione
         function resetForNewScan() {
             document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('rewardSection').classList.add('hidden');
             document.getElementById('scannerSection').classList.remove('hidden');
             currentUser = null;
             resetForm();
             startScanner();
+        }
+
+        // Mostra premio validato
+        function showRewardValidated(data) {
+            console.log('🎁 Mostro risultato validazione premio:', data);
+
+            const redemption = data.redemption;
+            const reward = redemption.reward;
+            const user = redemption.user;
+
+            // Formatta valore premio basato sul tipo
+            let rewardValueDisplay = '';
+            if (reward.type === 'discount') {
+                rewardValueDisplay = `€${reward.value} di sconto`;
+            } else if (reward.type === 'free_product') {
+                rewardValueDisplay = 'Prodotto Gratuito';
+            } else {
+                rewardValueDisplay = reward.value;
+            }
+
+            // Formatta data
+            const redeemedDate = new Date(redemption.redeemed_at);
+            const dateFormatted = redeemedDate.toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Popola i campi
+            document.getElementById('rewardName').textContent = reward.name || 'Premio';
+            document.getElementById('rewardValue').textContent = rewardValueDisplay;
+            document.getElementById('rewardCode').textContent = redemption.code;
+            document.getElementById('rewardPointsUsed').textContent = redemption.points_used + ' punti';
+            document.getElementById('rewardRedeemedAt').textContent = dateFormatted;
+
+            // Nascondi tutto e mostra sezione premio
+            document.getElementById('scannerSection').classList.add('hidden');
+            document.getElementById('formSection').classList.add('hidden');
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('rewardSection').classList.remove('hidden');
+
+            console.log('✅ Schermata premio validato mostrata!');
         }
 
         // Mostra errore
