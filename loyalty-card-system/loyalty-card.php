@@ -512,9 +512,15 @@ class LoyaltyCardSystem {
 
         $redemption_code = $request->get_param('redemption_code');
 
-        $table = $wpdb->prefix . 'loyalty_redemptions';
+        $table_redemptions = $wpdb->prefix . 'loyalty_redemptions';
+        $table_rewards = $wpdb->prefix . 'loyalty_rewards';
+
+        // Ottieni riscatto con dati premio
         $redemption = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table WHERE redemption_code = %s AND status = 'active'",
+            "SELECT r.*, rw.name as reward_name, rw.description as reward_description, rw.reward_type, rw.reward_value
+             FROM $table_redemptions r
+             LEFT JOIN $table_rewards rw ON r.reward_id = rw.id
+             WHERE r.redemption_code = %s AND r.status = 'active'",
             $redemption_code
         ));
 
@@ -523,15 +529,34 @@ class LoyaltyCardSystem {
         }
 
         // Marca come utilizzato
-        $wpdb->update($table,
+        $wpdb->update($table_redemptions,
             array('status' => 'used', 'used_at' => current_time('mysql')),
             array('id' => $redemption->id)
         );
 
+        // Ottieni dati utente
+        $user = get_user_by('id', $redemption->user_id);
+
         return array(
             'success' => true,
             'message' => 'Premio validato con successo',
-            'redemption' => $redemption,
+            'redemption' => array(
+                'code' => $redemption->redemption_code,
+                'points_used' => intval($redemption->points_used),
+                'redeemed_at' => $redemption->redeemed_at,
+                'used_at' => current_time('mysql'),
+                'reward' => array(
+                    'name' => $redemption->reward_name,
+                    'description' => $redemption->reward_description,
+                    'type' => $redemption->reward_type,
+                    'value' => $redemption->reward_value,
+                ),
+                'user' => array(
+                    'id' => $redemption->user_id,
+                    'name' => $user ? $user->display_name : 'N/A',
+                    'email' => $user ? $user->user_email : 'N/A',
+                ),
+            ),
         );
     }
 
