@@ -431,23 +431,37 @@
         function onScanSuccess(decodedText, decodedResult) {
             console.log('🔍 QR Scansionato:', decodedText);
 
-            // Verifica formato QR: LOYALTY-USER-123-hash
-            const match = decodedText.match(/^LOYALTY-USER-(\d+)-([a-f0-9]{8})$/);
+            // Verifica formato QR UTENTE: LOYALTY-USER-123-hash
+            const userMatch = decodedText.match(/^LOYALTY-USER-(\d+)-([a-f0-9]{8})$/);
+            if (userMatch) {
+                const userId = userMatch[1];
+                console.log('✅ QR Utente - User ID estratto:', userId);
 
-            if (!match) {
-                console.error('❌ QR code formato non valido:', decodedText);
-                showError('QR code non valido. Formato ricevuto: ' + decodedText.substring(0, 50));
+                // Ferma scanner
+                stopScanner();
+
+                // Carica dati utente
+                loadUserData(userId);
                 return;
             }
 
-            const userId = match[1];
-            console.log('✅ User ID estratto:', userId);
+            // Verifica formato QR PREMIO: LOYALTY-REWARD-ABCD1234
+            const rewardMatch = decodedText.match(/^LOYALTY-REWARD-([A-Z0-9]{8})$/);
+            if (rewardMatch) {
+                const redemptionCode = rewardMatch[1];
+                console.log('🎁 QR Premio - Codice riscatto:', redemptionCode);
 
-            // Ferma scanner
-            stopScanner();
+                // Ferma scanner
+                stopScanner();
 
-            // Carica dati utente
-            loadUserData(userId);
+                // Valida premio
+                validateReward(redemptionCode);
+                return;
+            }
+
+            // QR non valido
+            console.error('❌ QR code formato non valido:', decodedText);
+            showError('QR code non valido. Formato ricevuto: ' + decodedText.substring(0, 50));
         }
 
         function onScanError(error) {
