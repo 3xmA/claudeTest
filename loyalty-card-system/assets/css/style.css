@@ -179,6 +179,65 @@
     opacity: 0.7;
 }
 
+/* Prodotti WooCommerce */
+.reward-card.woo-product {
+    overflow: hidden;
+    padding: 0;
+}
+
+.reward-image {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    background: var(--loyalty-bg);
+}
+
+.reward-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.reward-card:hover .reward-image img {
+    transform: scale(1.05);
+}
+
+.woo-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(124, 58, 237, 0.95);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.reward-card.woo-product .reward-header,
+.reward-card.woo-product .reward-body {
+    padding: 20px;
+}
+
+.reward-card.woo-product .reward-header {
+    padding-bottom: 0;
+}
+
+.btn-redeem-woo {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    background: var(--loyalty-secondary);
+}
+
+.btn-redeem-woo:hover {
+    background: #6d28d9;
+}
+
 .reward-header {
     display: flex;
     justify-content: space-between;

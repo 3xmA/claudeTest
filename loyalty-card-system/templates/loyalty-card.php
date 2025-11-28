@@ -12,10 +12,13 @@ $qr_url = Loyalty_QRCode::generate_user_qr($user_id, 300);
 $recent_transactions = Loyalty_Points::get_user_transactions($user_id, 10);
 $recent_redemptions = Loyalty_Points::get_user_redemptions($user_id);
 
-// Ottieni premi disponibili
+// Ottieni premi disponibili (database)
 global $wpdb;
 $table_rewards = $wpdb->prefix . 'loyalty_rewards';
 $available_rewards = $wpdb->get_results("SELECT * FROM $table_rewards WHERE is_active = 1 ORDER BY points_required ASC");
+
+// Permetti ai plugin addon di aggiungere premi (es: prodotti WooCommerce)
+$available_rewards = apply_filters('loyalty_available_rewards', $available_rewards, $user_id);
 ?>
 
 <div class="loyalty-card-container">
@@ -68,19 +71,30 @@ $available_rewards = $wpdb->get_results("SELECT * FROM $table_rewards WHERE is_a
             <p>Nessun premio disponibile al momento.</p>
         <?php else : ?>
             <div class="rewards-grid">
-                <?php foreach ($available_rewards as $reward) : 
+                <?php foreach ($available_rewards as $reward) :
                     $can_redeem = $stats['balance'] >= $reward->points_required;
                     $progress = min(100, ($stats['balance'] / $reward->points_required) * 100);
+                    $is_woo_product = isset($reward->reward_type) && $reward->reward_type === 'woo_product';
                 ?>
-                    <div class="reward-card <?php echo $can_redeem ? 'can-redeem' : 'locked'; ?>">
+                    <div class="reward-card <?php echo $can_redeem ? 'can-redeem' : 'locked'; ?> <?php echo $is_woo_product ? 'woo-product' : ''; ?>">
+
+                        <?php if ($is_woo_product && !empty($reward->image_url)) : ?>
+                            <div class="reward-image">
+                                <img src="<?php echo esc_url($reward->image_url); ?>" alt="<?php echo esc_attr($reward->name); ?>">
+                                <?php if ($is_woo_product) : ?>
+                                    <span class="woo-badge">🛒 WooCommerce</span>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+
                         <div class="reward-header">
                             <h4><?php echo esc_html($reward->name); ?></h4>
                             <span class="reward-points"><?php echo number_format($reward->points_required); ?> punti</span>
                         </div>
-                        
+
                         <div class="reward-body">
                             <p><?php echo esc_html($reward->description); ?></p>
-                            
+
                             <div class="reward-progress">
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: <?php echo $progress; ?>%"></div>
@@ -93,11 +107,17 @@ $available_rewards = $wpdb->get_results("SELECT * FROM $table_rewards WHERE is_a
                                     <?php endif; ?>
                                 </span>
                             </div>
-                            
+
                             <?php if ($can_redeem) : ?>
-                                <button class="btn-redeem" data-reward-id="<?php echo $reward->id; ?>">
-                                    Riscatta Premio
-                                </button>
+                                <?php if ($is_woo_product && !empty($reward->product_url)) : ?>
+                                    <a href="<?php echo esc_url($reward->product_url); ?>" class="btn-redeem btn-redeem-woo">
+                                        Vedi Prodotto e Riscatta
+                                    </a>
+                                <?php else : ?>
+                                    <button class="btn-redeem" data-reward-id="<?php echo $reward->id; ?>">
+                                        Riscatta Premio
+                                    </button>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>
