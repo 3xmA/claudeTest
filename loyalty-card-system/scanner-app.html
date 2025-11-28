@@ -525,6 +525,53 @@
             }
         }
 
+        // Valida premio riscattato
+        async function validateReward(redemptionCode) {
+            console.log('🎁 Validazione premio:', redemptionCode);
+            console.log('📡 URL API:', config.apiUrl);
+
+            const url = `${config.apiUrl}/wp-json/loyalty/v1/validate-reward`;
+            console.log('📡 URL completo:', url);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': config.apiKey
+                    },
+                    body: JSON.stringify({
+                        redemption_code: redemptionCode
+                    })
+                });
+
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response ok:', response.ok);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('❌ Errore response:', errorData);
+                    throw new Error(errorData.message || 'Premio non valido o già utilizzato');
+                }
+
+                const data = await response.json();
+                console.log('✅ Premio validato:', data);
+
+                // Mostra schermata conferma premio
+                showRewardValidated(data);
+
+            } catch (error) {
+                console.error('❌ Errore validateReward:', error);
+                showError(error.message);
+
+                // Riavvia scanner dopo 3 secondi
+                setTimeout(() => {
+                    hideError();
+                    startScanner();
+                }, 3000);
+            }
+        }
+
         // Calcola punti in tempo reale
         function calculatePoints() {
             const amount = parseFloat(document.getElementById('amount').value) || 0;
