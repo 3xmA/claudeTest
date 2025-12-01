@@ -123,17 +123,36 @@ class Loyalty_Google_Wallet {
             return new WP_Error('unauthorized', 'Utente non autenticato', array('status' => 401));
         }
 
+        // Verifica che la classe Generic esista
+        if (!$this->class_exists()) {
+            error_log('Google Wallet: Classe Generic non trovata!');
+            return new WP_Error(
+                'class_not_found',
+                'La classe Google Wallet non è stata creata. Vai su "Carta Fedeltà > Google Wallet" e clicca "Crea Classe Generic Pass".',
+                array('status' => 400)
+            );
+        }
+
         try {
             $jwt = $this->generate_jwt($user_id);
             $save_url = "https://pay.google.com/gp/v/save/{$jwt}";
 
+            // Log per debug
+            error_log('Google Wallet JWT generato per user_id: ' . $user_id);
+            error_log('JWT length: ' . strlen($jwt));
+
             return array(
                 'success' => true,
                 'url' => $save_url,
-                'message' => 'Pass generato con successo'
+                'message' => 'Pass generato con successo',
+                'debug' => array(
+                    'user_id' => $user_id,
+                    'jwt_length' => strlen($jwt)
+                )
             );
         } catch (Exception $e) {
             error_log('Google Wallet Error: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
 
             return new WP_Error('generation_failed', $e->getMessage(), array('status' => 500));
         }
@@ -154,17 +173,22 @@ class Loyalty_Google_Wallet {
         $qr_hash = substr(md5($user_id . AUTH_KEY), 0, 8);
         $qr_code = "LOYALTY-USER-{$user_id}-{$qr_hash}";
 
+        // Logo URL (opzionale)
+        $logo_url = get_option('loyalty_gw_logo_url', '');
+        $logo_config = !empty($logo_url) ? array(
+            'logo' => array(
+                'sourceUri' => array(
+                    'uri' => $logo_url
+                )
+            )
+        ) : array();
+
         // Oggetto Generic Pass
-        $generic_object = array(
+        $generic_object = array_merge(array(
             'id' => $object_id,
             'classId' => "{$issuer_id}.{$class_id}",
             'genericType' => 'GENERIC_TYPE_UNSPECIFIED',
             'hexBackgroundColor' => '#4f46e5',
-            'logo' => array(
-                'sourceUri' => array(
-                    'uri' => get_option('loyalty_gw_logo_url', site_url('/wp-content/plugins/loyalty-card-system/assets/images/logo.png'))
-                )
-            ),
             'cardTitle' => array(
                 'defaultValue' => array(
                     'language' => 'it',
@@ -180,7 +204,7 @@ class Loyalty_Google_Wallet {
             'header' => array(
                 'defaultValue' => array(
                     'language' => 'it',
-                    'value' => number_format($stats['balance'])
+                    'value' => (string)$stats['balance'] // Converti a stringa
                 )
             ),
             'barcode' => array(
@@ -197,15 +221,15 @@ class Loyalty_Google_Wallet {
                 array(
                     'id' => 'total_earned',
                     'header' => 'Totale Guadagnati',
-                    'body' => number_format($stats['total_earned']) . ' punti'
+                    'body' => $stats['total_earned'] . ' punti'
                 ),
                 array(
                     'id' => 'rewards_count',
                     'header' => 'Premi Riscattati',
-                    'body' => $stats['rewards_count']
+                    'body' => (string)$stats['rewards_count']
                 )
             )
-        );
+        ), $logo_config);
 
         // Payload JWT
         $payload = array(
@@ -218,6 +242,10 @@ class Loyalty_Google_Wallet {
                 'genericObjects' => array($generic_object)
             )
         );
+
+        // Log per debug
+        error_log('Google Wallet Generic Object: ' . json_encode($generic_object, JSON_PRETTY_PRINT));
+        error_log('Google Wallet Payload: ' . json_encode($payload, JSON_PRETTY_PRINT));
 
         // Firma JWT
         return $this->sign_jwt($payload);
@@ -292,6 +320,35 @@ class Loyalty_Google_Wallet {
     }
 
     /**
+     * Verifica se la classe Generic esiste
+     */
+    public function class_exists() {
+        $issuer_id = get_option('loyalty_gw_issuer_id');
+        $class_id = get_option('loyalty_gw_class_id', 'loyalty_card_class');
+        $full_class_id = "{$issuer_id}.{$class_id}";
+
+        try {
+            $access_token = $this->get_access_token();
+
+            $response = wp_remote_get(self::GOOGLE_WALLET_API . "/genericClass/{$full_class_id}", array(
+                'headers' => array(
+                    'Authorization' => 'Bearer ' . $access_token,
+                    'Content-Type' => 'application/json'
+                ),
+                'timeout' => 30
+            ));
+
+            $status_code = wp_remote_retrieve_response_code($response);
+
+            // 200 = esiste, 404 = non esiste
+            return $status_code === 200;
+        } catch (Exception $e) {
+            error_log('Errore verifica classe: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Crea Generic Class (chiamare una volta sola)
      */
     public function create_generic_class() {
@@ -330,6 +387,10 @@ class Loyalty_Google_Wallet {
             )
         );
 
+        // Log classe da creare
+        error_log('Google Wallet: Creazione classe Generic');
+        error_log('Classe JSON: ' . json_encode($generic_class, JSON_PRETTY_PRINT));
+
         // Chiamata API per creare la classe
         $access_token = $this->get_access_token();
 
@@ -343,16 +404,22 @@ class Loyalty_Google_Wallet {
         ));
 
         if (is_wp_error($response)) {
-            throw new Exception('Errore chiamata API: ' . $response->get_error_message());
+            $error_msg = 'Errore chiamata API: ' . $response->get_error_message();
+            error_log('Google Wallet Error: ' . $error_msg);
+            throw new Exception($error_msg);
         }
 
         $status_code = wp_remote_retrieve_response_code($response);
         $body = wp_remote_retrieve_body($response);
 
+        error_log('Google Wallet: Response status ' . $status_code);
+        error_log('Google Wallet: Response body ' . $body);
+
         if ($status_code !== 200 && $status_code !== 201) {
             throw new Exception('Errore creazione classe: ' . $body);
         }
 
+        error_log('Google Wallet: Classe creata con successo!');
         return json_decode($body, true);
     }
 
