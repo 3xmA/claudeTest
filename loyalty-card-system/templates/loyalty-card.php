@@ -59,7 +59,10 @@ $available_rewards = $wpdb->get_results("SELECT * FROM $table_rewards WHERE is_a
             </div>
         </div>
     </div>
-    
+
+    <!-- Google Wallet Button -->
+    <?php do_action('loyalty_card_actions'); ?>
+
     <!-- Premi Disponibili -->
     <div class="rewards-section">
         <h3>🎁 Premi Disponibili</h3>

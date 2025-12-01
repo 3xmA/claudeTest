@@ -174,6 +174,14 @@ class LoyaltyCardSystem {
         require_once LOYALTY_PLUGIN_DIR . 'includes/class-email-sender.php';
         require_once LOYALTY_PLUGIN_DIR . 'includes/class-whatsapp-sender.php';
         require_once LOYALTY_PLUGIN_DIR . 'includes/class-default-templates.php';
+
+        // Google Wallet Integration
+        require_once LOYALTY_PLUGIN_DIR . 'includes/class-google-wallet.php';
+        require_once LOYALTY_PLUGIN_DIR . 'includes/class-google-wallet-settings.php';
+
+        // Inizializza Google Wallet
+        Loyalty_Google_Wallet::get_instance();
+        Loyalty_Google_Wallet_Settings::get_instance();
     }
     
     /**

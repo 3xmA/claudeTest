@@ -449,6 +449,54 @@
     color: var(--loyalty-text);
 }
 
+/* Google Wallet Button */
+.loyalty-google-wallet-button {
+    text-align: center;
+    padding: 30px 20px;
+    background: white;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.btn-add-google-wallet {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 32px;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+}
+
+.btn-add-google-wallet:hover {
+    background: #1557b0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+}
+
+.btn-add-google-wallet:active {
+    transform: translateY(0);
+}
+
+.btn-add-google-wallet:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.wallet-logo {
+    width: 24px;
+    height: 24px;
+    filter: brightness(0) invert(1);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .loyalty-card {
@@ -469,5 +517,10 @@
     
     .redemption-qr {
         justify-self: center;
+    }
+
+    .btn-add-google-wallet {
+        padding: 12px 24px;
+        font-size: 14px;
     }
 }
