@@ -123,15 +123,8 @@ class Loyalty_Google_Wallet {
             return new WP_Error('unauthorized', 'Utente non autenticato', array('status' => 401));
         }
 
-        // Verifica che la classe Generic esista
-        if (!$this->class_exists()) {
-            error_log('Google Wallet: Classe Generic non trovata!');
-            return new WP_Error(
-                'class_not_found',
-                'La classe Google Wallet non è stata creata. Vai su "Carta Fedeltà > Google Wallet" e clicca "Crea Classe Generic Pass".',
-                array('status' => 400)
-            );
-        }
+        // Nota: saltiamo il check class_exists() perché può dare falsi negativi con 403
+        // La classe è stata creata (confermato da errore 409)
 
         try {
             $jwt = $this->generate_jwt($user_id);
