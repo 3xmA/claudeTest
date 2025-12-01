@@ -37,9 +37,7 @@ class Loyalty_Google_Wallet {
         register_rest_route('loyalty/v1', '/google-wallet/pass', array(
             'methods' => 'GET',
             'callback' => array($this, 'api_generate_pass'),
-            'permission_callback' => function() {
-                return is_user_logged_in();
-            }
+            'permission_callback' => '__return_true' // Verifica dentro il metodo
         ));
     }
 
@@ -80,20 +78,32 @@ class Loyalty_Google_Wallet {
             try {
                 const response = await fetch('<?php echo rest_url('loyalty/v1/google-wallet/pass'); ?>', {
                     method: 'GET',
-                    credentials: 'same-origin'
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>'
+                    }
                 });
 
                 const data = await response.json();
 
+                // Gestisci successo
                 if (data.success && data.url) {
-                    // Apri URL Google Wallet in nuova finestra
                     window.open(data.url, '_blank');
-                } else {
+                }
+                // Gestisci WP_Error (formato: {code, message, data})
+                else if (data.code && data.message) {
+                    alert('Errore: ' + data.message);
+                    console.error('WP Error:', data);
+                }
+                // Gestisci altri errori
+                else {
                     alert('Errore nella generazione del pass: ' + (data.message || 'Errore sconosciuto'));
+                    console.error('Error data:', data);
                 }
             } catch (error) {
                 console.error('Errore:', error);
-                alert('Errore nella generazione del pass');
+                alert('Errore di connessione. Riprova.');
             } finally {
                 button.disabled = false;
                 button.innerHTML = '<img src="<?php echo plugins_url('assets/images/google-wallet-logo.svg', dirname(__FILE__)); ?>" alt="Google Wallet" class="wallet-logo">Aggiungi a Google Wallet';
